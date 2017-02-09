@@ -16,4 +16,5 @@ struct Products {
     let amount:String
     let estimate_date:String
     let delivery_status:String
+    let image_url:String
 }

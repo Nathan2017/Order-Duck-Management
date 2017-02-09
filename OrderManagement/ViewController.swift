@@ -11,7 +11,11 @@ import UIKit
 class ViewController: UIViewController,UICollectionViewDelegate,UICollectionViewDelegateFlowLayout,UICollectionViewDataSource {
     let urlpath = URL(string: "https://serene-escarpment-78587.herokuapp.com/api/products")
     var productss:[Products] = []
-   var products_image:[UIImage] = [UIImage(named: "macbook-pro")!,UIImage(named: "predator")!,UIImage(named: "blackguy")!]
+   var imagecache:NSCache<AnyObject, AnyObject> = {
+      let ic = NSCache<AnyObject, AnyObject>()
+      return ic
+   }()
+   //var products_image:[UIImage] = [UIImage(named: "macbook-pro")!,UIImage(named: "predator")!,UIImage(named: "blackguy")!]
     lazy var productcollectionview:UICollectionView = {
        let layout = UICollectionViewFlowLayout()
         layout.minimumLineSpacing = 10
@@ -20,7 +24,7 @@ class ViewController: UIViewController,UICollectionViewDelegate,UICollectionView
         pcv.backgroundColor = UIColor(red: 226/255, green: 226/255, blue: 226/255, alpha: 1)
         pcv.dataSource = self
         pcv.delegate = self
-        pcv.contentInset = UIEdgeInsets(top: 10, left: 0, bottom: 0, right: 0)
+        pcv.contentInset = UIEdgeInsets(top: 10, left: 0, bottom: 60, right: 0)
         pcv.alwaysBounceVertical = true
         pcv.register(ProductsCell.self, forCellWithReuseIdentifier: "cellid")
         return pcv
@@ -52,6 +56,8 @@ class ViewController: UIViewController,UICollectionViewDelegate,UICollectionView
             ucv.delivery_status.textColor = UIColor(red: 133/255, green: 152/255, blue: 88/255, alpha: 1)
         case "Delayed" :
             ucv.delivery_status.textColor = UIColor.red
+        case "Delivered" :
+            ucv.delivery_status.textColor = UIColor.black
         case "Pending Request" :
             ucv.delivery_status.textColor = UIColor.orange
         default:
@@ -61,7 +67,28 @@ class ViewController: UIViewController,UICollectionViewDelegate,UICollectionView
         ucv.product_price_amount.text = productss[indexPath.item].price + "  \u{00B7}  " + productss[indexPath.item].amount + " item"
         ucv.estimate_delivery_date.text = productss[indexPath.item].estimate_date
         ucv.order_date.text = "Ordered on " + productss[indexPath.item].order_date
-        ucv.product_image.image = products_image[indexPath.item]
+        //ucv.product_image.image = products_image[indexPath.item]
+      if let cacheimage = imagecache.object(forKey: productss[indexPath.item].image_url as AnyObject) as? UIImage {
+         ucv.product_image.image = cacheimage
+      }
+      else
+      {
+        let url = URL(string: productss[indexPath.item].image_url)
+      DispatchQueue.global(qos: .background).async {
+         do{
+            let data = try Data(contentsOf: url!)
+            DispatchQueue.main.async {
+               let im = UIImage(data: data)
+               self.imagecache.setObject(im!, forKey: self.productss[indexPath.item].image_url as AnyObject)
+               ucv.product_image.image = im
+            }
+            
+         }
+         catch{
+            
+         }
+      }
+      }
         return ucv
     }
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -77,14 +104,13 @@ class ViewController: UIViewController,UICollectionViewDelegate,UICollectionView
                 do{
                 let json = try JSONSerialization.jsonObject(with: data!, options: []) as? NSDictionary
                     let jsondict = json?["products"] as! NSArray
-                    //let item = jsondict[0] as! [String:String]
                     for item in jsondict
                     {
                         
                    
                         DispatchQueue.main.async {
                             let item = item as! [String:String]
-                            self.productss.append(Products(product_id: item["product_id"]!, product_name: item["product_name"]!, price: item["price"]!, order_date: item["order_date"]!,amount:item["amount"]!, estimate_date: item["estimate_delivery_date"]!, delivery_status: item["delivery_status"]!))
+                           self.productss.append(Products(product_id: item["product_id"]!, product_name: item["product_name"]!, price: item["price"]!, order_date: item["order_date"]!,amount:item["amount"]!, estimate_date: item["estimate_delivery_date"]!, delivery_status: item["delivery_status"]!,image_url: item["image_url"]!))
                              self.productcollectionview.reloadData()
                         }
                        
