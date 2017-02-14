@@ -12,11 +12,13 @@ class TabBarController: UITabBarController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        let nav1 = UINavigationController(rootViewController:UIViewController())
+        let nav1 = UINavigationController(rootViewController:NewOrderViewController())
         nav1.tabBarItem.title = "Shop"
         nav1.tabBarItem.image = UIImage(named: "shop")
         
-        let nav2 = UINavigationController(rootViewController: ViewController())
+        
+        let layout = UICollectionViewFlowLayout()
+        let nav2 = UINavigationController(rootViewController: ViewController(collectionViewLayout: layout))
         nav2.tabBarItem.title = "Cart"
         nav2.tabBarItem.image = UIImage(named: "Cart")
         
